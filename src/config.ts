@@ -41,6 +41,18 @@ export const config = Convict<IConnectorConfigSchema<TBlueBankConfig, never>>({
             default: null, // required
             env: 'MODE',
         },
+         SDK_API_SPEC_FILE: {
+        doc: 'SDK API Spec File Path',
+        format: String,
+        default: './api-spec/core-connector-api-spec-sdk.yml',
+        env: 'SDK_API_SPEC_FILE',
+    },
+    DFSP_API_SPEC_FILE: {
+        doc: 'DFSP API Spec File Path',
+        format: String,
+        default: './api-spec/core-connector-api-spec-dfsp.yml',
+        env: 'DFSP_API_SPEC_FILE',
+    },
     },
     sdkSchemeAdapter: {
         SDK_BASE_URL: {
