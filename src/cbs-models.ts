@@ -54,7 +54,7 @@ export type TCbsFeeResponse = {
 
 export type TCbsReserveRequest = {
     transactionId?: string;
-    homeTransactionId?: string;
+    switchReference?: string;
     amount: string;
     currency: string;
     narration?: string;
@@ -73,7 +73,7 @@ export type TCbsReserveResponse = {
 
 export type TCbsUnReserveRequest = {
     transactionId?: string;
-    homeTransactionId?: string;
+    PSPReference?: string;
    
 };
 
@@ -85,7 +85,7 @@ export type TCbsUnReserveResponse = {
 // ─── Final Transaction ───────
 
 export type TCbsPostingRequest = {
-    homeTransactionId?: string;
+    switchReference?: string;
     transferId?: string;
 };
 
@@ -100,7 +100,7 @@ export type TCbsPostingResponse = {
 
 export type TCbsReversalRequest = {
     transferId: string;
-    homeTransactionId: string;
+    switchReference: string;
 };
 
 export type TCbsReversalResponse = {

@@ -199,8 +199,8 @@ export class MockCBSClient<D> implements ICbsClient {
             amount:                     transfer.amount,
             currency:                   transfer.currency,
             transactionType:            transfer.transactionType, // e.g. "TRANSFER"|"PAYMENT"|"DEPOSIT"
-            transactionId:              transfer.transactionRequestId,
-            homeTransactionId:          uniqueId,
+            transactionId:              transfer.transferId, // Mojaloop switch UUID
+            switchReference:               uniqueId,           // CBS reference
             narration:                  transfer.from.displayName ?? transfer.from.lastName,
             fromAccount:                transfer.from.idValue,
             fromAccountType:            transfer.from.idType,
@@ -244,7 +244,7 @@ export class MockCBSClient<D> implements ICbsClient {
             throw ConnectorError.cbsConfigUndefined(txInfo?.message ?? 'reserved failed', '2000', 500);
         }
         const transferResponse = {
-            homeTransactionId: uniqueId,
+            homeTransactionId: uniqueId, // CBS reference
             transferState: 'RESERVED' as components["schemas"]["transferState"],
         };
 
@@ -259,8 +259,8 @@ export class MockCBSClient<D> implements ICbsClient {
    
         // Build request
         const requestBody: TCbsUnReserveRequest = {
-            homeTransactionId:               transferUpdate.transferId,
-            transactionId:                     transferUpdate.homeTransactionId
+            transactionId:               transferUpdate.transferId,
+            PSPReference:                transferUpdate.homeTransactionId
         };
 
         const headers = this.getHeaders();
@@ -308,7 +308,7 @@ export class MockCBSClient<D> implements ICbsClient {
         // Build request
         const requestBody: TCbsPostingRequest = {
             transferId:                     transferUpdate.transferId,
-            homeTransactionId:              transferUpdate.homeTransactionId,
+            switchReference:                transferUpdate.homeTransactionId,
         };
 
         const headers = this.getHeaders();
@@ -359,7 +359,7 @@ export class MockCBSClient<D> implements ICbsClient {
         // Build request
         const requestBody: TCbsReversalRequest = {
             transferId:              transferId,
-            homeTransactionId :      updateSendMoneyDeps.homeTransactionId
+            switchReference :      updateSendMoneyDeps.homeTransactionId
         };
 
         const headers = this.getHeaders();
