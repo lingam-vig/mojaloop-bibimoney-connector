@@ -3,56 +3,71 @@ import type { components } from '@mojaloop/api-snippets/lib/sdk-scheme-adapter/v
 
 export type TCbsBaseResponse<T> = {
     requestType?: string ;
-    status?: string;
-    statusCode?: string;
-    errorText?: string ;
-    information?: T;
+    Status?: string;
+    StatusCode: string;
+    ErrorText?: string ;
+    Information?: T;
 };
 export type TCbsAccountLookupRequest = {
     api_key: string;
     api_secret: string;
     MSISDN: string;
+    TerminalID: string;
+    AccessKey: string;
 };
 
 //--- Account lookup
  export type TCbsAccountLookupResponse = {
     IWAN?: string;
-    msisdn?: string;
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-    accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-    currency?: string;
+    Msisdn?: string;
+    Farration: string;
+    FirstName?: string;
+    AccountName?: string;
+    MiddleName?: string;
+    LastName?: string;
+    DateOfBirth?: string;
+    AccountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+    Currency?: string;
 };
 // ─── Transaction Lookup ───
 
 // Lookup Tx Request
 export type TCbsFeeRequest = {
-    amount?: string;
-    currency?: string;
-    transactionType?: string;
-    sourceAccountNumber: string;
-    destinationAccountNumber?: string;
-    transactionId?: string;
-    quoteId?: string;
+    api_key: string;
+    api_secret: string;
+    TerminalID: string;
+    AccessKey: string;
+
+    Amount?: string;
+    Currency?: string;
+    TransactionType?: string;
+    SourceAccountNumber: string;
+    DestinationAccountNumber?: string;
+    DestinationAccountType?: string; //MSISDN | ACCOUNT_ID
+    TxReference?: string;
+    QuoteId?: string;
 };
 
 //Lookup Response
 export type TCbsFeeResponse = {
-    transactionAmount?: string;
-    transactionCurrency: components["schemas"]["currency"];
-    feeAmount?: string;
-    feeCurrency?: components["schemas"]["currency"];
-    commissionAmount?: string;
-    commissionCurrency?: components["schemas"]["currency"];
-    transactionId: string;
-    quoteId: string;
+    TransactionAmount?: string;
+    TransactionCurrency: components["schemas"]["currency"];
+    FeeAmount?: string;
+    FeeCurrency?: components["schemas"]["currency"];
+    CommissionAmount?: string;
+    CommissionCurrency?: components["schemas"]["currency"];
+    TransactionId: string;
+    QuoteId: string;
 };
 
 // ─── Fund Reserve ───
 
 export type TCbsReserveRequest = {
+    api_key: string;
+    api_secret: string;
+    TerminalID: string;
+    AccessKey: string;
+
     transactionId?: string;
     switchReference?: string;
     amount: string;
@@ -72,6 +87,12 @@ export type TCbsReserveResponse = {
 };
 
 export type TCbsUnReserveRequest = {
+
+    api_key: string;
+    api_secret: string;
+    TerminalID: string;
+    AccessKey: string;
+
     transactionId?: string;
     PSPReference?: string;
    
@@ -85,6 +106,11 @@ export type TCbsUnReserveResponse = {
 // ─── Final Transaction ───────
 
 export type TCbsPostingRequest = {
+    api_key: string;
+    api_secret: string;
+    TerminalID: string;
+    AccessKey: string;
+
     switchReference?: string;
     transferId?: string;
 };
@@ -99,6 +125,10 @@ export type TCbsPostingResponse = {
 // ─── Transaction Reversal ──────────
 
 export type TCbsReversalRequest = {
+    api_key: string;
+    api_secret: string;
+    TerminalID: string;
+    AccessKey: string;
     transferId: string;
     switchReference: string;
 };
