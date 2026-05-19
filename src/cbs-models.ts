@@ -12,6 +12,7 @@ export type TCbsAccountLookupRequest = {
     api_key: string;
     api_secret: string;
     MSISDN: string;
+    SubId?: string;
     TerminalID: string;
     AccessKey: string;
 };
@@ -68,22 +69,22 @@ export type TCbsReserveRequest = {
     TerminalID: string;
     AccessKey: string;
 
-    transactionId?: string;
-    switchReference?: string;
-    amount: string;
-    currency: string;
-    narration?: string;
-    transactionType: string;
-    fromAccount: string;
-    fromAccountType: string;
-    toAccount: string;
-    toAccountType: string;
+    TransactionId?: string;
+    SwitchReference?: string;
+    Amount: string;
+    Currency: string;
+    Narration?: string;
+    TransactionType: string;
+    SourceAccountType: string;
+    SourceAccountNumber: string;
+    DestinationAccountNumber?: string;
+    DestinationAccountType?: string; //MSISDN | ACCOUNT_ID
 };
 
 export type TCbsReserveResponse = {
     PSPReference: string;      
-    status: 'SUCCESS' | 'FAILED';
-    message?: string;
+    Status: 'SUCCESS' | 'FAILED';
+    Message?: string;
 };
 
 export type TCbsUnReserveRequest = {
@@ -93,7 +94,7 @@ export type TCbsUnReserveRequest = {
     TerminalID: string;
     AccessKey: string;
 
-    transactionId?: string;
+    TransactionId?: string;
     PSPReference?: string;
    
 };
@@ -111,8 +112,8 @@ export type TCbsPostingRequest = {
     TerminalID: string;
     AccessKey: string;
 
-    switchReference?: string;
-    transferId?: string;
+    SwitchReference?: string;
+    TransferId?: string;
 };
 
 
@@ -129,8 +130,8 @@ export type TCbsReversalRequest = {
     api_secret: string;
     TerminalID: string;
     AccessKey: string;
-    transferId: string;
-    switchReference: string;
+    TransferId: string;
+    SwitchReference: string;
 };
 
 export type TCbsReversalResponse = {

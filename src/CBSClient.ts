@@ -46,30 +46,26 @@ export class MockCBSClient<D> implements ICbsClient {
            // throw ConnectorError.cbsConfigUndefined('Party Not Found', '2000', 500);
        // }
         this.logger.info(`deps.accountId`, deps.accountId);
-        this.logger.info(`BLUE_BANK_API_KEY`, process.env.BLUE_BANK_API_KEY);
-
         this.logger.info(`BLUE_BANK_URL`, process.env.BLUE_BANK_URL);
 
 
        // Validate idType
+
         if (!deps.accountId) {
             throw AggregateError.idAndIdTypeUndefinedError(
                 'ID and ID type are undefined', 
-                '3200', 
+                '400', 
                 400
             );
         }
 
-        //  if (!['MSISDN', 'ACCOUNT_ID'].includes(deps)) {
-        // throw AggregateError.unsupportedIdTypeError();
-        // }
-
         const requestBody: TCbsAccountLookupRequest = {
-            api_key: process.env.BLUE_BANK_API_KEY!,
-            api_secret: process.env.BLUE_BANK_API_SECRET!,
-            TerminalID: process.env.BLUE_BANK_TERMINALID!,
-            AccessKey: process.env.BLUE_BANK_ACCESSKEY!,
-            MSISDN: deps.accountId!,
+            api_key:        process.env.BLUE_BANK_API_KEY!,
+            api_secret:     process.env.BLUE_BANK_API_SECRET!,
+            TerminalID:     process.env.BLUE_BANK_TERMINALID!,
+            AccessKey:      process.env.BLUE_BANK_ACCESSKEY!,
+            MSISDN:         deps.accountId!,
+            SubId:          deps.subId
         };
 
         const headers = this.getHeaders();
@@ -88,7 +84,7 @@ export class MockCBSClient<D> implements ICbsClient {
             );
         } catch (error) {
             this.logger.error(`CBS API unreachable: ${error}`);
-            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '1001', 500);
         }
 
         //----------- Response ----------------
@@ -96,25 +92,38 @@ export class MockCBSClient<D> implements ICbsClient {
         this.logger.info(`CBS response: ${JSON.stringify(cbsResponse)}`);
 
         if (cbsResponse.Status != 'OK') {
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '5000', 500);
+
+            // auth error
+            if(cbsResponse.StatusCode == '400')
+            {
+                throw ConnectorError.cbsConfigUndefined('auth error', '3200', 500);
+            }
+
+            if(cbsResponse.StatusCode == '910' || cbsResponse.StatusCode == '920')
+            {
+                throw ConnectorError.cbsConfigUndefined('Internal server error', '2001', 500);
+            }
+
+            // 310 | 320 | 330 | 340 | 400 | 510   
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS validation error', '3100',500);
         }
 
          if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
             this.logger.error(`CBS account lookup failed: ${cbsResponse.ErrorText}`);
             
-            this.handleCbsLookupStatus(cbsResponse.StatusCode, cbsResponse.ErrorText);
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS validation error', '3000',500);
            
         }
 
         const accountInfo = cbsResponse.Information;
         if (!accountInfo) {
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error- No account info found', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error- No account info found', '3203', 500);
             //throw AggregateError.invalidAccountNumberError();
         }
 
         // Check account is active
         if (accountInfo.AccountStatus !== 'ACTIVE') {
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error- Account status not active', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined('Account is not active', '5200', 500);
         }
 
         const party = {
@@ -149,10 +158,20 @@ export class MockCBSClient<D> implements ICbsClient {
 
     async getQuote(quoteRequest: TQuoteRequest): Promise<TQuoteResponse> {
         this.logger.info(`Processing quoteRequest`, quoteRequest);
-
         this.logger.info(`${process.env.BLUE_BANK_URL}/transaction/runlookup`);
 
-    // Build request
+        // Validate idType
+
+        if (quoteRequest.to?.idType === 'MSISDN' || quoteRequest.to?.idType === 'ACCOUNT_NO')
+        {
+            throw AggregateError.idAndIdTypeUndefinedError(
+                            'Invalid to IdType', 
+                            '400', 
+                            400
+                        );
+        }
+
+        // Build request
         const requestBody: TCbsFeeRequest = {
             api_key: process.env.BLUE_BANK_API_KEY!,
             api_secret: process.env.BLUE_BANK_API_SECRET!,
@@ -164,7 +183,7 @@ export class MockCBSClient<D> implements ICbsClient {
             TransactionType:            quoteRequest.transactionType, // e.g. "TRANSFER"
             SourceAccountNumber:        quoteRequest.from.idValue,
             DestinationAccountNumber:   quoteRequest.to?.idValue,
-            DestinationAccountType:     'MSISDN',
+            DestinationAccountType:     quoteRequest.to?.type, 
             TxReference:                quoteRequest.transactionId,
             QuoteId :                   quoteRequest.quoteId,
         };
@@ -185,7 +204,7 @@ export class MockCBSClient<D> implements ICbsClient {
             );
         } catch (error) {
             this.logger.error(`CBS API unreachable: ${error}`);
-            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '5000', 500);
+             throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '1001', 500);
         }
 
         const cbsResponse = response.data;
@@ -193,19 +212,34 @@ export class MockCBSClient<D> implements ICbsClient {
         this.logger.info(`CBS tx lookup response: ${JSON.stringify(cbsResponse)}`);
 
          if (cbsResponse.Status != 'OK') {
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', cbsResponse.StatusCode, 500);
+
+              // auth error
+            if(cbsResponse.StatusCode == '400')
+            {
+                throw ConnectorError.cbsConfigUndefined('auth error', '3200', 500);
+            }
+
+            if(cbsResponse.StatusCode == '910' || cbsResponse.StatusCode == '920')
+            {
+                var code = this.mapError(cbsResponse.ErrorText ?? 'Internal server error');
+
+                throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'Internal server error', code, 500);
+            }
+
+            // 310 | 320 | 330 | 340 | 400 | 510   
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS validation error', '3100',500);
         }
 
-         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== 'TransactionSuccess') {
+         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
             this.logger.error(`CBS tx fee lookup failed: ${cbsResponse.ErrorText}`);
             
-            this.handleCbsTransactionStatus(cbsResponse.StatusCode, cbsResponse.ErrorText);
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS validation error', '3100',500);
            
         }
 
         const txInfo = cbsResponse.Information;
         if (!txInfo) {
-            throw ConnectorError.cbsConfigUndefined('No fee data returned', '2000', 500);
+            throw ConnectorError.cbsConfigUndefined('No fee data returned', '3100',500);
         }
 
         const QuoteResponse = {
@@ -235,6 +269,17 @@ export class MockCBSClient<D> implements ICbsClient {
             throw ConnectorError.cbsConfigUndefined('Abort Transfer', '2000', 500);
         }
 
+          // Validate idType
+
+        if (transfer.to?.idType === 'MSISDN' || transfer.to?.idType === 'ACCOUNT_NO')
+        {
+            throw AggregateError.idAndIdTypeUndefinedError(
+                            'Invalid to IdType', 
+                            '400', 
+                            400
+                        );
+        }
+
         const uniqueId = crypto.randomUUID(); // accepts UUID
         // Build request
         const requestBody: TCbsReserveRequest = {
@@ -243,16 +288,16 @@ export class MockCBSClient<D> implements ICbsClient {
             TerminalID: process.env.BLUE_BANK_TERMINALID!,
             AccessKey: process.env.BLUE_BANK_ACCESSKEY!,
 
-            amount:                     transfer.amount,
-            currency:                   transfer.currency,
-            transactionType:            transfer.transactionType, // e.g. "TRANSFER"|"PAYMENT"|"DEPOSIT"
-            transactionId:              transfer.transferId, // Mojaloop switch UUID
-            switchReference:               uniqueId,           // CBS reference
-            narration:                  transfer.from.displayName ?? transfer.from.lastName,
-            fromAccount:                transfer.from.idValue,
-            fromAccountType:            transfer.from.idType,
-            toAccount:                  transfer.to.idValue,
-            toAccountType:              transfer.to.idType,
+            Amount:                     transfer.amount,
+            Currency:                   transfer.currency,
+            TransactionType:            transfer.transactionType, // e.g. "TRANSFER"|"PAYMENT"|"DEPOSIT"
+            TransactionId:              transfer.transferId, // Mojaloop switch UUID
+            SwitchReference:            uniqueId,           // CBS reference
+            Narration:                  transfer.from.displayName ?? transfer.from.lastName,
+            SourceAccountNumber:        transfer.from.idValue,
+            SourceAccountType:          transfer.from.idType,
+            DestinationAccountNumber:   transfer.to.idValue,
+            DestinationAccountType:     transfer.to.idType,
         };
 
         const headers = this.getHeaders();
@@ -270,32 +315,67 @@ export class MockCBSClient<D> implements ICbsClient {
         );
         } catch (error) {
             this.logger.error(`CBS API unreachable: ${error}`);
-            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '1001', 500);
         }
        
+        
         const cbsResponse = response.data;
 
          this.logger.info(`CBS tx reserve response: ${JSON.stringify(cbsResponse)}`);
 
-         if (cbsResponse.Status != 'OK') {
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '5000', 500);
+          if (cbsResponse.Status != 'OK') {
+
+              // auth error
+            if(cbsResponse.StatusCode == '400')
+            {
+                throw ConnectorError.cbsConfigUndefined('auth error', '3200', 500);
+            }
+
+            if(cbsResponse.StatusCode == 'DUPLICATE')
+            {
+                throw ConnectorError.cbsConfigUndefined('Duplicate transaction', '3200', 500);
+            }
+
+            if(cbsResponse.StatusCode == '910' || cbsResponse.StatusCode == '920')
+            {
+                var code = this.mapError(cbsResponse.ErrorText ?? 'Internal server error');
+
+                throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'Internal server error', code, 500);
+            }
+
+            // 310 | 320 | 330 | 340 | 400 | 510   
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS validation error', '3100', 500);
         }
 
-         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== 'TransactionSuccess') {
-            this.handleCbsTransactionStatus(cbsResponse.StatusCode, cbsResponse.ErrorText);
+         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
+            this.logger.error(`CBS tx fee lookup failed: ${cbsResponse.ErrorText}`);
+            
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS validation error', '3100',500);
+           
         }
 
         const txInfo = cbsResponse.Information;
         if (!txInfo) {
-            throw ConnectorError.cbsConfigUndefined('No data returned', '2000', 500);
+            throw ConnectorError.cbsConfigUndefined('No fee data returned', '3100',500);
         }
 
-          if (txInfo.status != 'SUCCESS') {
-            throw ConnectorError.cbsConfigUndefined(txInfo?.message ?? 'reserved failed', '2000', 500);
+        if (txInfo.Status != 'SUCCESS') {
+            throw ConnectorError.cbsConfigUndefined(txInfo?.Message ?? 'reserved failed', '2000', 500);
         }
         const transferResponse = {
             homeTransactionId: uniqueId, // CBS reference
             transferState: 'RESERVED' as components["schemas"]["transferState"],
+                    // ✅ Add these back
+            to: {
+                idType: transfer.to.idType,
+                idValue: transfer.to.idValue,
+            },
+            from: {
+                idType: transfer.from.idType,
+                idValue: transfer.from.idValue,
+            },
+            amount: transfer.amount,
+            currency: transfer.currency,
         };
 
         // Log response
@@ -314,7 +394,7 @@ export class MockCBSClient<D> implements ICbsClient {
             TerminalID: process.env.BLUE_BANK_TERMINALID!,
             AccessKey: process.env.BLUE_BANK_ACCESSKEY!,
 
-            transactionId:               transferUpdate.transferId,
+            TransactionId:               transferUpdate.transferId,
             PSPReference:                transferUpdate.homeTransactionId
         };
 
@@ -344,7 +424,7 @@ export class MockCBSClient<D> implements ICbsClient {
             throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '5000', 500);
         }
 
-         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== 'TransactionSuccess') {
+         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
             this.handleCbsTransactionStatus(cbsResponse.StatusCode, cbsResponse.ErrorText);
         }
         const txInfo = cbsResponse.Information;
@@ -365,8 +445,8 @@ export class MockCBSClient<D> implements ICbsClient {
             TerminalID: process.env.BLUE_BANK_TERMINALID!,
             AccessKey: process.env.BLUE_BANK_ACCESSKEY!,
 
-            transferId:                     transferUpdate.transferId,
-            switchReference:                transferUpdate.homeTransactionId,
+            TransferId:                     transferUpdate.transferId,
+            SwitchReference:                transferUpdate.homeTransactionId,
         };
 
         const headers = this.getHeaders();
@@ -395,7 +475,7 @@ export class MockCBSClient<D> implements ICbsClient {
             throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '5000', 500);
         }
 
-         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== 'TransactionSuccess') {
+         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
             this.handleCbsTransactionStatus(cbsResponse.StatusCode, cbsResponse.ErrorText);
         }
         const txInfo = cbsResponse.Information;
@@ -419,8 +499,8 @@ export class MockCBSClient<D> implements ICbsClient {
             TerminalID: process.env.BLUE_BANK_TERMINALID!,
             AccessKey: process.env.BLUE_BANK_ACCESSKEY!,
 
-            transferId:              transferId,
-            switchReference :      updateSendMoneyDeps.homeTransactionId
+            TransferId:              transferId,
+            SwitchReference :      updateSendMoneyDeps.homeTransactionId
         };
 
         const headers = this.getHeaders();
@@ -449,7 +529,7 @@ export class MockCBSClient<D> implements ICbsClient {
             throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '5000', 500);
         }
 
-         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== 'TransactionSuccess') {
+         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
             this.handleCbsTransactionStatus(cbsResponse.StatusCode, cbsResponse.ErrorText);
         }
         const txInfo = cbsResponse.Information;
@@ -463,13 +543,13 @@ export class MockCBSClient<D> implements ICbsClient {
 
     handleCbsLookupStatus(statusCode: string, errorText?: string) {
         const handlers: Record<string, () => never> = {
-            NotFoundMSISDN: () => { throw AggregateError.invalidAccountNumberError() },
-            NotFoundAccount: () => { throw AggregateError.invalidAccountNumberError() },
-            AccountSanctioned: () => { throw AggregateError.invalidAccountNumberError() },
-            DoNotHonour: () => { throw AggregateError.accountBarredError() },
+            NotFoundMSISDN: () => {  throw ConnectorError.cbsConfigUndefined('MSISDN is not found', '3204',500) },
+            NotFoundAccount: () => { throw ConnectorError.cbsConfigUndefined('Account not found', '3203',500) },
+            AccountSanctioned: () => { throw ConnectorError.cbsConfigUndefined('Account sanctioned', '5200',500) },
+            DoNotHonour: () => { throw ConnectorError.cbsConfigUndefined('DO NOT HONOUR', '5200',500) },
 
         };
-
+//
         const handler = handlers[statusCode];
 
         if (handler) {
@@ -477,8 +557,8 @@ export class MockCBSClient<D> implements ICbsClient {
         }
 
          throw ConnectorError.cbsConfigUndefined(
-            errorText ?? 'CBS error',
-            '5000',
+            errorText ?? 'CBS validation error',
+            '3100',
             500
         );
     }
@@ -512,6 +592,35 @@ export class MockCBSClient<D> implements ICbsClient {
             500
         );
     }
+
+    mapError(msg: string): string {
+    const m = msg.toUpperCase();
+
+    const rules: Array<{ match: string[]; code: string }> = [
+        { match: ["CLI_NOT_FOUND"], code: "3200" },
+        { match: ["ACCOUNT_CLI_NOT_LOCAL", "INVALID_CLI"], code: "3200" },
+        { match: ["ACCOUNT_REF_NOT_EXIST", "ACCOUNT_NOT_FOUND"], code: "2000" },
+        { match: ["ACCOUNT_FROZEN"], code: "5400" },
+        { match: ["ACCOUNT_NOT_ACTIVE"], code: "5400" },
+        { match: ["ACCOUNT_CANNOT_BE_SAME", "CUSTOMER_SAME_DENIED"], code: "5000" },
+        { match: ["ACCOUNT_SANCTIONED"], code: "5200" },
+        { match: ["PRODUCT_INACTIVE", "PRODUCT_TMP_UNAVAILABLE"], code: "2002" },
+        { match: ["TX_CURRENCY_MISMATCH", "CURRENCY_NOT_EXIST", "CURRENCY_NOT_TRANSACT"], code: "5106" },
+        { match: ["TX_AMOUNT_MIN_VALUE", "TX_AMOUNT_INVALID"], code: "5200" }, // limit error
+        { match: ["TX_AMOUNT_MAX_VALUE"], code: "5200" }, 
+        // LIMIT ERRORS
+        { match: ["LIMIT"], code: "4200" },
+    ];
+
+   for (const rule of rules) {
+        if (rule.match.some(key => m.includes(key))) {
+            return rule.code;
+        }
+    }
+
+    return "3100"; // default
+}
+
 
 }
 
