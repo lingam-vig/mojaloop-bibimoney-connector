@@ -209,7 +209,7 @@ export class MockCBSClient<D> implements ICbsClient {
 
         const cbsResponse = response.data;
 
-        this.logger.info(`CBS tx lookup response: ${JSON.stringify(cbsResponse)}`);
+        this.logger.info(`CBS tx getQuote response: ${JSON.stringify(cbsResponse)}`);
 
          if (cbsResponse.Status != 'OK') {
 
@@ -271,7 +271,7 @@ export class MockCBSClient<D> implements ICbsClient {
 
           // Validate idType
 
-        if (transfer.to?.idType === 'MSISDN' || transfer.to?.idType === 'ACCOUNT_NO')
+        if (transfer.to?.idType !== 'MSISDN' && transfer.to?.idType !== 'ACCOUNT_NO')
         {
             throw AggregateError.idAndIdTypeUndefinedError(
                             'Invalid to IdType', 
