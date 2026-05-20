@@ -183,7 +183,7 @@ export class MockCBSClient<D> implements ICbsClient {
             TransactionType:            quoteRequest.transactionType, // e.g. "TRANSFER"
             SourceAccountNumber:        quoteRequest.from.idValue,
             DestinationAccountNumber:   quoteRequest.to?.idValue,
-            DestinationAccountType:     quoteRequest.to?.type, 
+            DestinationAccountType:     quoteRequest.to?.idType, 
             TxReference:                quoteRequest.transactionId,
             QuoteId :                   quoteRequest.quoteId,
         };
