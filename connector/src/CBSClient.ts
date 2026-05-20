@@ -157,12 +157,12 @@ export class MockCBSClient<D> implements ICbsClient {
     }
 
     async getQuote(quoteRequest: TQuoteRequest): Promise<TQuoteResponse> {
-        this.logger.info(`Processing quoteRequest`, quoteRequest);
+        this.logger.info("Incoming quoteRequest BEFORE VALIDATION", { payload: quoteRequest });
         this.logger.info(`${process.env.BLUE_BANK_URL}/transaction/runlookup`);
 
         // Validate idType
 
-        if (quoteRequest.to?.idType === 'MSISDN' || quoteRequest.to?.idType === 'ACCOUNT_NO')
+        if (quoteRequest.to?.idType !== 'MSISDN' && quoteRequest.to?.idType !== 'ACCOUNT_NO')
         {
             throw AggregateError.idAndIdTypeUndefinedError(
                             'Invalid to IdType', 
