@@ -264,12 +264,7 @@ export class MockCBSClient<D> implements ICbsClient {
         if (transfer.to.idValue === '+2203628891') {
             // timeout
             await new Promise((resolve) => setTimeout(resolve, 300_000));
-        } else if (transfer.to.idValue === '+2203628890') {
-            // abort
-            throw ConnectorError.cbsConfigUndefined('Abort Transfer', '2000', 500);
-        }
-
-          // Validate idType
+        } 
 
         if (transfer.to?.idType !== 'MSISDN' && transfer.to?.idType !== 'ACCOUNT_NO')
         {
@@ -362,6 +357,27 @@ export class MockCBSClient<D> implements ICbsClient {
         if (txInfo.Status != 'SUCCESS') {
             throw ConnectorError.cbsConfigUndefined(txInfo?.Message ?? 'reserved failed', '2000', 500);
         }
+
+        // If this MSISDN should simulate abort AFTER reserve
+        if (transfer.to.idValue === '447903690471') {
+             const transferAbortResponse = {
+               homeTransactionId: uniqueId, // CBS reference
+            transferState: 'ABORTED' as components["schemas"]["transferState"],
+            to: {
+                idType: transfer.to.idType,
+                idValue: transfer.to.idValue,
+            },
+            from: {
+                idType: transfer.from.idType,
+                idValue: transfer.from.idValue,
+            },
+            amount: transfer.amount,
+            currency: transfer.currency,
+            };
+            this.logger.debug('transferAbortResponse', transferAbortResponse);
+            return transferAbortResponse;
+        }
+
         const transferResponse = {
             homeTransactionId: uniqueId, // CBS reference
             transferState: 'RESERVED' as components["schemas"]["transferState"],
@@ -438,6 +454,7 @@ export class MockCBSClient<D> implements ICbsClient {
     async commitReservedFunds(transferUpdate: TtransferPatchNotificationRequest): Promise<void> {
         this.logger.info(`Committing funds for request `, transferUpdate);
 
+        
         // Build request
         const requestBody: TCbsPostingRequest = {
             api_key: process.env.BLUE_BANK_API_KEY!,
