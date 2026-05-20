@@ -95,3 +95,52 @@ git clone https://github.com/lingam-vig/mojaloop-bibimoney-connector.git
 cd mojaloop-bibimoney-connector
 git checkout develop
 ls
+
+# BUild docker image
+cd ~/git/mojaloop-bibimoney-connector/connector
+docker build -t bibimoney-connector:latest .
+
+# Verify
+docker images | grep bibimoney
+
+# Update our coreconnector image
+cd ~/git/cbs-core-connector-test-harness/sdk-based-test-harness
+nano core-connector.yaml
+
+image: bibimoney-connector:latest
+
+# BUild and run the core bank api (just for testing)
+
+# Install .NET runtime on EC2
+sudo apt-get update
+sudo apt-get install -y dotnet-runtime-8.0
+
+# Or install the full SDK if you need to build
+sudo apt-get install -y dotnet-sdk-8.0
+
+# if above wont work
+wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y dotnet-runtime-8.0
+
+
+# Clone/upload your .NET API repo
+cd ~/git
+git clone <your-dotnet-api-repo>
+cd <your-dotnet-api>
+
+# Run it
+dotnet run --urls "http://0.0.0.0:5129"
+
+
+#### Logs
+
+docker-compose down
+docker-compose up -d
+docker-compose -f ./ttk-tests-docker-compose.yml up
+
+docker logs sdk-based-test-harness-core-connector1-1 --tail 20
+docker logs -f sdk-based-test-harness-core-connector1-1 &
+docker logs sdk-based-test-harness-core-connector1-1 2>&1 | grep -E "parties|quoterequest|transfers|error|Error" | tail -30
