@@ -26,6 +26,7 @@ if (!dfspConfig.cbs) {
         0,
     );
 }
+console.log("SINGLE_FSPIOP_INTEGRATION =", process.env.SINGLE_FSPIOP_INTEGRATION);
 console.log("MODE LOADED:", process.env.MODE);
 const cbsClient: ICbsClient = new MockCBSClient<TBlueBankConfig>(dfspConfig.cbs, httpClient, logger);
 const coreConnector = coreConnectorServiceFactory({ cbsClient: cbsClient, config: dfspConfig });

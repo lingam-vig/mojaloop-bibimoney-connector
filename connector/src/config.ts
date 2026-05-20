@@ -42,16 +42,22 @@ export const config = Convict<IConnectorConfigSchema<TBlueBankConfig, never>>({
             env: 'MODE',
         },
          SDK_API_SPEC_FILE: {
-        doc: 'SDK API Spec File Path',
-        format: String,
-        default: './api-spec/core-connector-api-spec-sdk.yml',
-        env: 'SDK_API_SPEC_FILE',
-    },
-    DFSP_API_SPEC_FILE: {
-        doc: 'DFSP API Spec File Path',
-        format: String,
-        default: './api-spec/core-connector-api-spec-dfsp.yml',
-        env: 'DFSP_API_SPEC_FILE',
+            doc: 'SDK API Spec File Path',
+            format: String,
+            default: './api-spec/core-connector-api-spec-sdk.yml',
+            env: 'SDK_API_SPEC_FILE',
+        },
+        DFSP_API_SPEC_FILE: {
+            doc: 'DFSP API Spec File Path',
+            format: String,
+            default: './api-spec/core-connector-api-spec-dfsp.yml',
+            env: 'DFSP_API_SPEC_FILE',
+        },
+       SINGLE_FSPIOP_INTEGRATION: {
+        doc: 'Enable single FSPIOP integration mode',
+        format: Boolean,
+        default: false,
+        env: 'SINGLE_FSPIOP_INTEGRATION'
     },
     },
     sdkSchemeAdapter: {
