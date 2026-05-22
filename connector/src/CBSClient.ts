@@ -403,6 +403,13 @@ export class MockCBSClient<D> implements ICbsClient {
         this.logger.info(`Unreserving funds for request `, transferUpdate);
 
    
+        // This is getting called when lookup failing
+         //If no homeTransactionId, funds were never reserved — skip cancel
+    if (!transferUpdate.homeTransactionId) {
+        this.logger.info(`No homeTransactionId present — skipping cancel, funds were never reserved`);
+        return;
+    }
+
         // Build request
         const requestBody: TCbsUnReserveRequest = {
             api_key: process.env.BLUE_BANK_API_KEY!,
