@@ -358,25 +358,25 @@ export class MockCBSClient<D> implements ICbsClient {
             throw ConnectorError.cbsConfigUndefined(txInfo?.Message ?? 'reserved failed', '2000', 500);
         }
 
-        // If this MSISDN should simulate abort AFTER reserve
-        if (transfer.to.idValue === '447903690471') {
-             const transferAbortResponse = {
-               homeTransactionId: uniqueId, // CBS reference
-            transferState: 'ABORTED' as components["schemas"]["transferState"],
-            to: {
-                idType: transfer.to.idType,
-                idValue: transfer.to.idValue,
-            },
-            from: {
-                idType: transfer.from.idType,
-                idValue: transfer.from.idValue,
-            },
-            amount: transfer.amount,
-            currency: transfer.currency,
-            };
-            this.logger.debug('transferAbortResponse', transferAbortResponse);
-            return transferAbortResponse;
-        }
+       // If this MSISDN should simulate abort AFTER reserve
+        // if (transfer.to.idValue === '447903690471') {
+        //      const transferAbortResponse = {
+        //        homeTransactionId: uniqueId, // CBS reference
+        //     transferState: 'ABORTED' as components["schemas"]["transferState"],
+        //     to: {
+        //         idType: transfer.to.idType,
+        //         idValue: transfer.to.idValue,
+        //     },
+        //     from: {
+        //         idType: transfer.from.idType,
+        //         idValue: transfer.from.idValue,
+        //     },
+        //     amount: transfer.amount,
+        //     currency: transfer.currency,
+        //     };
+        //     this.logger.debug('transferAbortResponse', transferAbortResponse);
+        //     return transferAbortResponse;
+        // }
 
         const transferResponse = {
             homeTransactionId: uniqueId, // CBS reference
@@ -463,7 +463,7 @@ export class MockCBSClient<D> implements ICbsClient {
             AccessKey: process.env.BLUE_BANK_ACCESSKEY!,
 
             TransferId:                     transferUpdate.transferId,
-            SwitchReference:                transferUpdate.homeTransactionId,
+            SwitchReference:                transferUpdate.homeTransactionId, 
         };
 
         const headers = this.getHeaders();
