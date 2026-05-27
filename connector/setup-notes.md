@@ -144,3 +144,14 @@ docker-compose -f ./ttk-tests-docker-compose.yml up
 docker logs sdk-based-test-harness-core-connector1-1 --tail 20
 docker logs -f sdk-based-test-harness-core-connector1-1 &
 docker logs sdk-based-test-harness-core-connector1-1 2>&1 | grep -E "parties|quoterequest|transfers|error|Error" | tail -30
+
+
+##NOTES
+
+Mojaloop has TWO outbound integration modes
+Core Connector is running in “single‑integration mode”
+you will ONLY see /send-money  not /parties, /quotes, or /transfers outbound.
+"singleIntegrationMode": true
+
+
+Outgoing P2P / P2B send-moneyCore bank initiates, not your connector
