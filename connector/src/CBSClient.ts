@@ -171,6 +171,14 @@ export class MockCBSClient<D> implements ICbsClient {
                         );
         }
 
+        // Validate currency (REJECT anything not matching settings)
+if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) {
+    throw ConnectorError.cbsConfigUndefined(
+        `Unsupported currency ${quoteRequest.currency}. Only ${this.cbsConfig.CURRENCY} allowed`,
+        '5106',   // Incorrect Currency
+        400
+    );
+}
         // Build request
         const requestBody: TCbsFeeRequest = {
             api_key: process.env.BLUE_BANK_API_KEY!,
