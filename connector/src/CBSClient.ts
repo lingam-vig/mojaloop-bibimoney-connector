@@ -17,6 +17,7 @@ import {
     TtransferRequest,
     TtransferResponse,
 } from '@mojaloop/core-connector-lib';
+import { ulid } from 'ulid';
 import { ConnectorError } from './errors';
 import type { components } from '@mojaloop/api-snippets/lib/sdk-scheme-adapter/v2_0_0/backend/openapi'
 import { TCbsAccountLookupResponse, TCbsBaseResponse, TCbsFeeResponse ,TCbsFeeRequest,TCbsReserveRequest,TCbsReserveResponse, TCbsUnReserveRequest, TCbsUnReserveResponse, TCbsPostingRequest, TCbsReversalRequest, TCbsReversalResponse, TCbsAccountLookupRequest} from './cbs-models';
@@ -295,7 +296,8 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
             );
         }
 
-        const uniqueId = crypto.randomUUID(); // accepts UUID
+        const uniqueId = ulid();
+        
         // Build request
         const requestBody: TCbsReserveRequest = {
             api_key: process.env.BLUE_BANK_API_KEY!,
