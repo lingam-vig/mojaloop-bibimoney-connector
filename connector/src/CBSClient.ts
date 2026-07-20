@@ -54,7 +54,7 @@ export class MockCBSClient<D> implements ICbsClient {
         if (!deps.accountId) {
             throw AggregateError.idAndIdTypeUndefinedError(
                 'ID and ID type are undefined', 
-                '400', 
+                '3100', 
                 400
             );
         }
@@ -166,7 +166,7 @@ export class MockCBSClient<D> implements ICbsClient {
         {
             throw AggregateError.idAndIdTypeUndefinedError(
                             'Invalid to IdType', 
-                            '400', 
+                            '3100', 
                             400
                         );
         }
@@ -269,18 +269,30 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
 
     async reserveFunds(transfer: TtransferRequest): Promise<TtransferResponse> {
         this.logger.info(`Reserving funds for transfer request`, transfer);
-        if (transfer.to.idValue === '+2203628891') {
-            // timeout
-            await new Promise((resolve) => setTimeout(resolve, 300_000));
-        } 
 
-        if (transfer.to?.idType !== 'MSISDN' && transfer.to?.idType !== 'ACCOUNT_NO')
-        {
+        // =====================================================================
+        // TEST ENVIRONMENT ONLY
+        // =====================================================================
+        if (process.env.ENABLE_TEST_SIMULATIONS === 'true') {
+            if (transfer.to.idValue === '+2203628891') {
+                // Simulate a 5-minute timeout (no response sent back to ML Connector)
+                await new Promise((resolve) => setTimeout(resolve, 300_000));
+            }
+
+            if (transfer.to.idValue === '+2203628890') {
+                // Simulate an aborted transfer
+                throw ConnectorError.cbsConfigUndefined('Abort Transfer', '2000', 500);
+            }
+        }
+
+        // idType validation happens before switchReference generation,
+        // so we never burn a UUID on a request we're about to reject.
+        if (transfer.to?.idType !== 'MSISDN' && transfer.to?.idType !== 'ACCOUNT_NO') {
             throw AggregateError.idAndIdTypeUndefinedError(
-                            'Invalid to IdType', 
-                            '400', 
-                            400
-                        );
+                'Invalid to IdType',
+                '3100',
+                400,
+            );
         }
 
         const uniqueId = crypto.randomUUID(); // accepts UUID
@@ -326,28 +338,36 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
 
          this.logger.info(`CBS tx reserve response: ${JSON.stringify(cbsResponse)}`);
 
+        // =====================================================================
+        // requested in PR review. 
+        // =====================================================================
+
           if (cbsResponse.Status != 'OK') {
 
               // auth error
-            if(cbsResponse.StatusCode == '400')
-            {
+            if(cbsResponse.StatusCode == '400'){
                 throw ConnectorError.cbsConfigUndefined('auth error', '3200', 500);
             }
 
-            if(cbsResponse.StatusCode == 'DUPLICATE')
-            {
+            if(cbsResponse.StatusCode == 'DUPLICATE') {
                 throw ConnectorError.cbsConfigUndefined('Duplicate transaction', '3200', 500);
             }
 
-            if(cbsResponse.StatusCode == '910' || cbsResponse.StatusCode == '920')
-            {
-                var code = this.mapError(cbsResponse.ErrorText ?? 'Internal server error');
+            if(cbsResponse.StatusCode == '950' || cbsResponse.StatusCode == '951'){
+                throw ConnectorError.cbsConfigUndefined('Account limit error|' + cbsResponse.ErrorText, '3100', 500);
+            }
 
+            if(cbsResponse.StatusCode == '902' || cbsResponse.StatusCode == '909'){
+                throw ConnectorError.cbsConfigUndefined('Account is frozen/restricted', '3100', 500);
+            }
+
+            if(cbsResponse.StatusCode == '910' || cbsResponse.StatusCode == '920'){
+                var code = this.mapError(cbsResponse.ErrorText ?? 'Internal server error');
                 throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'Internal server error', code, 500);
             }
 
             // 310 | 320 | 330 | 340 | 400 | 510   
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS validation error', '3100', 500);
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS reserve failed', '3100', 500);
         }
 
          if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
