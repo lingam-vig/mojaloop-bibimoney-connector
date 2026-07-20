@@ -20,10 +20,10 @@ cd cbs-core-connector-test-harness/sdk-based-test-harness
 # Update the IP in docker-compose.yml
 ## we need to update the ip so we can access the url publicly also tehy can communicate
 
-sed -i 's|http://localhost:15050|http://34.244.172.29:15050|g' docker-compose.yml
-sed -i 's|http://localhost:25050|http://34.244.172.29:25050|g' docker-compose.yml
-sed -i 's|http://localhost:45050|http://34.244.172.29:45050|g' docker-compose.yml
-sed -i 's|http://localhost:55050|http://34.244.172.29:55050|g' docker-compose.yml
+sed -i 's|http://localhost:15050|http://34.254.232.144:15050|g' docker-compose.yml
+sed -i 's|http://localhost:25050|http://34.254.232.144:25050|g' docker-compose.yml
+sed -i 's|http://localhost:45050|http://34.254.232.144:45050|g' docker-compose.yml
+sed -i 's|http://localhost:55050|http://34.254.232.144:55050|g' docker-compose.yml
 
 # Verify
 grep "API_BASE_URL" docker-compose.yml
@@ -64,6 +64,8 @@ cat ttk-tests-docker-compose.yml
 cat core-connector.env | grep -E "FSP_ID|CURRENCY|SDK_BASE"
 
 # Restart core connector to pick up new env
+docker-compose --profile debug up -d
+
 docker-compose --profile debug up -d --force-recreate
 
 # Run tests
@@ -145,6 +147,8 @@ docker logs sdk-based-test-harness-core-connector1-1 --tail 20
 docker logs -f sdk-based-test-harness-core-connector1-1 &
 docker logs sdk-based-test-harness-core-connector1-1 2>&1 | grep -E "parties|quoterequest|transfers|error|Error" | tail -30
 
+send money logs
+docker logs -f sdk-based-test-harness-core-connector2-1
 
 ##NOTES
 
@@ -155,3 +159,33 @@ you will ONLY see /send-money  not /parties, /quotes, or /transfers outbound.
 
 
 Outgoing P2P / P2B send-moneyCore bank initiates, not your connector
+
+
+
+Our Core Banking System does not implement P2P or P2B logic.
+These are Mojaloop use cases handled entirely by the DFSP Core Connector.
+The CBS only performs internal account operations (lookup, balance, reserve, commit).
+Therefore, P2P/P2B test failures relate to missing connector logic, not CBS behaviour.
+
+
+docker-compose -f ttk-tests-docker-compose.yml down
+docker-compose -f ttk-tests-docker-compose.yml up --build
+
+
+
+Portal
+
+http://34.243.176.82:16060/admin/index
+
+
+(TTK) is simulating the other DFSP sending money to you
+
+
+docker logs ttk-dfsp1 --tail 200 -f
+docker logs core-connector2 --tail 200 -f
+docker logs ttk-dfsp1 -f
+
+cp ./environments/cc_golden_path_env_local.json ./config/ttk-dfsp1/environments/
+
+# Verify
+ls ./config/ttk-dfsp1/environments/

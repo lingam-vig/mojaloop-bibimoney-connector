@@ -1,0 +1,160 @@
+Payer
+The party sending the money.
+In your case: your bank’s customer.
+
+Payee
+The party receiving the money.
+In your case: the other bank’s customer.
+
+============ Send Money ======================
+{
+       "homeTransactionId": "HTX1234",
+       "payeeId": "44991234567",
+       "payeeIdType": "MSISDN",
+       "sendAmount": "100",
+       "sendCurrency": "GBP",
+       "transactionType": "TRANSFER",
+       "payer": { "name": "John Wright", "payerId": "0771234567" }
+   }
+   
+   
+---------- Response----------------------------
+{
+    "payeeDetails": {
+        "idType": "MSISDN",
+        "idValue": "44991234567",
+        "fspId": "dfsp2",
+        "name": "John Doe",
+        "fspLEI": "1234567890ABCDEFGHIJK"
+    },
+    "sendAmount": "100",
+    "sendCurrency": "GBP",
+    "receiveAmount": "No payee receive amount",
+    "receiveCurrency": "GMD",
+    "targetFees": "0",
+    "sourceFees": "0",
+    "transactionId": "01KXZJBYVHR940R5X30805HAQA",
+    "homeTransactionId": "HTX1234"
+}
+
+   
+============ Send Money Confirm ======================
+
+PUT
+
+http://34.254.232.144:13006/send-money/01KXZJBYVHR940R5X30805HAQA
+
+----- Wrong Id ------------------------ 500 internal server error
+{
+    "status": "2000",
+    "message": "Request failed with status code 500",
+    "details": {
+        "res": "{\"message\":\"No cached data found for transferId: 01KSMJA8KXESPM2MC32N7EMEGW\",\"transferState\":{},\"statusCode\":\"500\"}",
+        "headers": "content-type: application/json; charset=utf-8\ncontent-length: 115\ndate: Mon, 20 Jul 2026 10:54:51 GMT\nconnection: keep-alive\nkeep-alive: timeout=5"
+    }
+}
+
+----- Reject ------------------------ 500 Quote rejection
+
+PUT
+
+http://34.254.232.144:13006/send-money/01KXZJBYVHR940R5X30805HAQA
+
+------Request ------------------------
+{
+    "acceptQuote": false,
+    "homeTransactionId": "HTX1234"
+  }
+  
+--- Response --------------
+
+{
+    "status": "4101",
+    "message": "Payer Rejected Quote. OK"
+}
+
+---- Success full transactions
+
+{
+    "transferId": "01KXZJBYVHR940R5X30805HAQA"
+}
+
+
+============= Status Request ========================================
+
+http://34.254.232.144:13006/transfers/01KXZJBYVHR940R5X30805HAQA
+
+{
+    "transferId": "01KXZJBYVHR940R5X30805HAQA",
+    "currentState": "COMPLETED",
+    "initiatedTimestamp": "2026-07-20T10:59:19.290Z",
+    "direction": "OUTBOUND",
+    "fulfil": {
+        "body": {
+            "fulfilment": "1234567890ABCDEF",
+            "transferState": "COMMITTED",
+            "extensionList": {
+                "extension": [
+                    {
+                        "key": "GrpHdr.MsgId",
+                        "value": "12345"
+                    },
+                    {
+                        "key": "GrpHdr.CreDtTm",
+                        "value": "2026-07-20T10:50:23.547Z"
+                    },
+                    {
+                        "key": "TxInfAndSts.StsId",
+                        "value": "12345"
+                    },
+                    {
+                        "key": "TxInfAndSts.OrgnlInstrId",
+                        "value": "12345"
+                    },
+                    {
+                        "key": "TxInfAndSts.OrgnlEndToEndId",
+                        "value": "12345"
+                    },
+                    {
+                        "key": "TxInfAndSts.OrgnlTxId",
+                        "value": "12345"
+                    },
+                    {
+                        "key": "TxInfAndSts.OrgnlUETR",
+                        "value": "123e4567-e89b-12d3-a456-426614174000"
+                    },
+                    {
+                        "key": "TxInfAndSts.AccptncDtTm",
+                        "value": "2026-07-20T10:50:23.547Z"
+                    },
+                    {
+                        "key": "TxInfAndSts.AcctSvcrRef",
+                        "value": "ACCTSVCRREF"
+                    },
+                    {
+                        "key": "TxInfAndSts.ClrSysRef",
+                        "value": "CLRSYSREF"
+                    },
+                    {
+                        "key": "TxInfAndSts.SplmtryData.PlcAndNm",
+                        "value": "PLACE"
+                    },
+                    {
+                        "key": "TxInfAndSts.PrcgDt.Dt",
+                        "value": "2013-03-07"
+                    }
+                ]
+            }
+        },
+        "headers": {
+            "content-type": "application/vnd.interoperability.iso20022.transfers+json;version=2.0",
+            "date": "Mon, 20 Jul 2026 10:59:19 GMT",
+            "fspiop-source": "dfsp1",
+            "user-agent": "axios/1.7.7",
+            "content-length": 431,
+            "accept-encoding": "gzip, compress, deflate, br",
+            "host": "dfsp1-sdk-api-svc:4000",
+            "connection": "keep-alive"
+        }
+    }
+}
