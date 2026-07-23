@@ -47,6 +47,7 @@ export class MockCBSClient<D> implements ICbsClient {
            // throw ConnectorError.cbsConfigUndefined('Party Not Found', '2000', 500);
        // }
         this.logger.info(`deps.accountId`, deps.accountId);
+        this.logger.info(`deps.subId`, deps.subId);
         this.logger.info(`BLUE_BANK_URL`, process.env.BLUE_BANK_URL);
 
 
@@ -65,8 +66,9 @@ export class MockCBSClient<D> implements ICbsClient {
             api_secret:     process.env.BLUE_BANK_API_SECRET!,
             TerminalID:     process.env.BLUE_BANK_TERMINALID!,
             AccessKey:      process.env.BLUE_BANK_ACCESSKEY!,
-            MSISDN:         deps.accountId!,
-            SubId:          deps.subId
+            Reference:      deps.accountId!,
+            SubId:          deps.subId,
+            Type: 'MSISDN'
         };
 
         const headers = this.getHeaders();
@@ -173,13 +175,13 @@ export class MockCBSClient<D> implements ICbsClient {
         }
 
         // Validate currency (REJECT anything not matching settings)
-if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) {
-    throw ConnectorError.cbsConfigUndefined(
-        `Unsupported currency ${quoteRequest.currency}. Only ${this.cbsConfig.CURRENCY} allowed`,
-        '5106',   // Incorrect Currency
-        400
-    );
-}
+        if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) {
+            throw ConnectorError.cbsConfigUndefined(
+                `Unsupported currency ${quoteRequest.currency}. Only ${this.cbsConfig.CURRENCY} allowed`,
+                '5106',   // Incorrect Currency
+                400
+            );
+        }
         // Build request
         const requestBody: TCbsFeeRequest = {
             api_key: process.env.BLUE_BANK_API_KEY!,
@@ -286,8 +288,6 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
             }
         }
 
-        // idType validation happens before switchReference generation,
-        // so we never burn a UUID on a request we're about to reject.
         if (transfer.to?.idType !== 'MSISDN' && transfer.to?.idType !== 'ACCOUNT_NO') {
             throw AggregateError.idAndIdTypeUndefinedError(
                 'Invalid to IdType',
@@ -297,7 +297,7 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
         }
 
         const uniqueId = ulid();
-        
+
         // Build request
         const requestBody: TCbsReserveRequest = {
             api_key: process.env.BLUE_BANK_API_KEY!,
@@ -519,22 +519,22 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
             );
         } catch (error) {
             this.logger.error(`CBS API unreachable: ${error}`);
-            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '3100', 500);
         }
         const cbsResponse = response.data;
 
         this.logger.info(`CBS tx reserve response: ${JSON.stringify(cbsResponse)}`);
 
         if (cbsResponse.Status != 'OK') {
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '3100', 500);
         }
 
-         if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
+        if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
             this.handleCbsTransactionStatus(cbsResponse.StatusCode, cbsResponse.ErrorText);
         }
         const txInfo = cbsResponse.Information;
         if (!txInfo) {
-            throw ConnectorError.cbsConfigUndefined('No data returned', '2000', 500);
+            throw ConnectorError.cbsConfigUndefined('No data returned', '3100', 500);
         }
         return;
     }
@@ -572,7 +572,7 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
                 );
         } catch (error) {
             this.logger.error(`CBS API unreachable: ${error}`);
-            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined('CBS API unreachable', '3001', 500);
         }
 
         const cbsResponse = response.data;
@@ -580,7 +580,7 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
         this.logger.info(`CBS tx reserve response: ${JSON.stringify(cbsResponse)}`);
 
         if (cbsResponse.Status != 'OK') {
-            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '5000', 500);
+            throw ConnectorError.cbsConfigUndefined(cbsResponse.ErrorText ?? 'CBS error', '3001', 500);
         }
 
          if (cbsResponse.Status == 'OK' && cbsResponse.StatusCode !== '000') {
@@ -588,7 +588,7 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
         }
         const txInfo = cbsResponse.Information;
         if (!txInfo) {
-            throw ConnectorError.cbsConfigUndefined('No data returned', '2000', 500);
+            throw ConnectorError.cbsConfigUndefined('No data returned', '3001', 500);
         }
 
         this.logger.debug('transferResponse', 'REFUND COMPLETED');
@@ -623,15 +623,15 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
             NotFoundAccount: () => { throw AggregateError.invalidAccountNumberError() },
             AccountSanctioned: () => { throw AggregateError.invalidAccountNumberError() },
             DoNotHonour: () => { throw AggregateError.accountBarredError() },
-            NotPermitted: () => { throw ConnectorError.cbsConfigUndefined('Product not permitted', '5000',500) },
-            InvalidCurrency: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
-            LimitExceededTransaction: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
-            InvalidAmount: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
-            DuplicateTransactionStatus: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
-            NotFoundTransaction: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
-            LimitExceededTransactionCount: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
-            LimitExceededTransactionFrequency: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
-            InvalidKYC: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '5000',500) },
+            NotPermitted: () => { throw ConnectorError.cbsConfigUndefined('Product not permitted', '3100',500) },
+            InvalidCurrency: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
+            LimitExceededTransaction: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
+            InvalidAmount: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
+            DuplicateTransactionStatus: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
+            NotFoundTransaction: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
+            LimitExceededTransactionCount: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
+            LimitExceededTransactionFrequency: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
+            InvalidKYC: () => { throw ConnectorError.cbsConfigUndefined(errorText!, '3100',500) },
         };
 
         const handler = handlers[statusCode];
@@ -642,7 +642,7 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
 
          throw ConnectorError.cbsConfigUndefined(
             errorText ?? 'CBS error',
-            '5000',
+            '3100',
             500
         );
     }
@@ -654,16 +654,16 @@ if (quoteRequest.currency && quoteRequest.currency !== this.cbsConfig.CURRENCY) 
         { match: ["CLI_NOT_FOUND"], code: "3200" },
         { match: ["ACCOUNT_CLI_NOT_LOCAL", "INVALID_CLI"], code: "3200" },
         { match: ["ACCOUNT_REF_NOT_EXIST", "ACCOUNT_NOT_FOUND"], code: "2000" },
-        { match: ["ACCOUNT_FROZEN"], code: "5400" },
-        { match: ["ACCOUNT_NOT_ACTIVE"], code: "5400" },
+        { match: ["ACCOUNT_FROZEN"], code: "3100" },
+        { match: ["ACCOUNT_NOT_ACTIVE"], code: "3100" },
         { match: ["ACCOUNT_CANNOT_BE_SAME", "CUSTOMER_SAME_DENIED"], code: "5000" },
-        { match: ["ACCOUNT_SANCTIONED"], code: "5200" },
+        { match: ["ACCOUNT_SANCTIONED"], code: "3100" },
         { match: ["PRODUCT_INACTIVE", "PRODUCT_TMP_UNAVAILABLE"], code: "2002" },
         { match: ["TX_CURRENCY_MISMATCH", "CURRENCY_NOT_EXIST", "CURRENCY_NOT_TRANSACT"], code: "5106" },
-        { match: ["TX_AMOUNT_MIN_VALUE", "TX_AMOUNT_INVALID"], code: "5200" }, // limit error
+        { match: ["TX_AMOUNT_MIN_VALUE", "TX_AMOUNT_INVALID"], code: "3100" }, // limit error
         { match: ["TX_AMOUNT_MAX_VALUE"], code: "5200" }, 
         // LIMIT ERRORS
-        { match: ["LIMIT"], code: "4200" },
+        { match: ["LIMIT"], code: "3100" },
     ];
 
    for (const rule of rules) {

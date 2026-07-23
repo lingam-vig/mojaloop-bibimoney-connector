@@ -11,7 +11,8 @@ export type TCbsBaseResponse<T> = {
 export type TCbsAccountLookupRequest = {
     api_key: string;
     api_secret: string;
-    MSISDN: string;
+    Reference: string;
+    Type: string;
     SubId?: string;
     TerminalID: string;
     AccessKey: string;
