@@ -7,6 +7,7 @@ The party receiving the money.
 In your case: the other bank’s customer.
 
 ============ Send Money ======================
+http://34.254.232.144:13006/send-money
 {
        "homeTransactionId": "HTX1234",
        "payeeId": "44991234567",
@@ -158,3 +159,30 @@ http://34.254.232.144:13006/transfers/01KXZJBYVHR940R5X30805HAQA
         }
     }
 }
+
+===========================================================================================================
+
+Party not found
+
+500
+{
+    "status": "2000",
+    "message": "Request failed with status code 500",
+    "details": {
+        "res": "{\"message\":\"Got an error response resolving party: {\\\"errorInformation\\\":{\\\"errorDescription\\\":\\\"Unknown error\\\",\\\"extensionList\\\":{\\\"extension\\\":[{\\\"key\\\":\\\"Assgnmt.MsgId\\\",\\\"value\\\":\\\"01KXZQSS0RBC9ZPFX60TBQCMCR\\\"},{\\\"key\\\":\\\"Assgnmt.CreDtTm\\\",\\\"value\\\":\\\"2026-07-20T12:25:19.128Z\\\"},{\\\"key\\\":\\\"Rpt.Vrfctn\\\",\\\"value\\\":false}]}}}\",\"transferState\":{\"homeTransactionId\":\"HTX1234\",\"from\":{\"idType\":\"MSISDN\",\"idValue\":\"0771234567\",\"fspId\":\"bluebank\",\"displayName\":\"John Wright\",\"firstName\":\"John Wright\",\"middleName\":\"John Wright\",\"lastName\":\"John Wright\",\"supportedCurrencies\":[\"GMD\"]},\"to\":{\"idType\":\"MSISDN\",\"idValue\":\"46733123450\"},\"amountType\":\"SEND\",\"currency\":\"GBP\",\"amount\":\"100\",\"transactionType\":\"TRANSFER\",\"transferId\":\"01KXZQSRXWTJ4G59QF3RYFXWCE\",\"traceId\":\"d511c9796b8e325367c48e0a0f133823\",\"currentState\":\"ERROR_OCCURRED\",\"initiatedTimestamp\":\"2026-07-20T12:25:19.036Z\",\"direction\":\"OUTBOUND\",\"getPartiesRequest\":{\"withCredentials\":false,\"transitional\":{\"clarifyTimeoutError\":true},\"method\":\"GET\",\"baseURL\":\"http://ttk-hub:4040\",\"url\":\"/parties/MSISDN/46733123450\",\"headers\":{\"content-type\":\"application/vnd.interoperability.iso20022.parties+json;version=2.0\",\"date\":\"Mon, 20 Jul 2026 12:25:19 GMT\",\"fspiop-source\":\"dfsp1\",\"Authorization\":\"Bearer 7718fa9b-be13-3fe7-87f0-a12cf1628168\",\"accept\":\"application/vnd.interoperability.iso20022.parties+json;version=2\",\"traceparent\":\"00-d511c9796b8e325367c48e0a0f133823-8963f882f24f6dd9-01\"},\"httpAgent\":\"[REDACTED]\"},\"getPartiesResponse\":{\"body\":{\"errorInformation\":{\"errorDescription\":\"Unknown error\",\"extensionList\":{\"extension\":[{\"key\":\"Assgnmt.MsgId\",\"value\":\"01KXZQSS0RBC9ZPFX60TBQCMCR\"},{\"key\":\"Assgnmt.CreDtTm\",\"value\":\"2026-07-20T12:25:19.128Z\"},{\"key\":\"Rpt.Vrfctn\",\"value\":false}]}}},\"headers\":{\"content-type\":\"application/vnd.interoperability.iso20022.parties+json;version=2.0\",\"date\":\"Mon, 20 Jul 2026 12:25:19 GMT\",\"fspiop-source\":\"dfsp2\",\"fspiop-destination\":\"dfsp1\",\"authorization\":\"Bearer 7718fa9b-be13-3fe7-87f0-a12cf1628168\",\"traceparent\":\"00-d511c9796b8e325367c48e0a0f133823-8963f882f24f6dd9-01\",\"user-agent\":\"axios/1.8.2\",\"accept-encoding\":\"gzip, compress, deflate, br\",\"connection\":\"keep-alive\",\"content-length\":253,\"host\":\"dfsp1-sdk-api-svc:4000\"}},\"lastError\":{\"httpStatusCode\":500,\"mojaloopError\":{\"errorInformation\":{\"errorDescription\":\"Unknown error\",\"extensionList\":{\"extension\":[{\"key\":\"Assgnmt.MsgId\",\"value\":\"01KXZQSS0RBC9ZPFX60TBQCMCR\"},{\"key\":\"Assgnmt.CreDtTm\",\"value\":\"2026-07-20T12:25:19.128Z\"},{\"key\":\"Rpt.Vrfctn\",\"value\":false}]}}}}},\"statusCode\":\"500\"}",
+        "headers": "content-type: application/json; charset=utf-8\ncontent-length: 2541\ndate: Mon, 20 Jul 2026 12:25:19 GMT\nconnection: keep-alive\nkeep-alive: timeout=5"
+    }
+}
+
+
+Party ID types Mojaloop's FSPIOP API defines (per the standard spec):
+
+MSISDN — mobile number (what your example uses)
+ACCOUNT_ID — a bank account number/identifier
+IBAN — International Bank Account Number
+EMAIL — email address
+PERSONAL_ID — national ID, passport, etc. (with a sub-type)
+BUSINESS — business/merchant identifier
+DEVICE — device-based identifier
+ALIAS — a scheme-specific alias/nickname
+AS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
