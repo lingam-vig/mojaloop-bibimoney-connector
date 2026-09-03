@@ -1,37 +1,30 @@
-## *Builder*
-FROM node:lts-alpine as builder
+## --- Builder Stage ---
+FROM node:lts-alpine AS builder
 
 RUN apk add --no-cache git python3 build-base
 
-## Create app directory
 WORKDIR /opt/app
 
-## Copy basic files for installing dependencies
-COPY tsconfig.json package.json package-lock.json /opt/app/
-COPY src /opt/app/src
-
+COPY package.json package-lock.json ./
 RUN npm ci
 
-## Build the app
+COPY tsconfig.json ./
+COPY src ./src
+
 RUN npm run build
 
 
-## *Application*
+## --- Final Runtime Stage ---
 FROM node:lts-alpine
 
-RUN apk add --no-cache git python3 g++ make
+RUN apk add --no-cache git python3
+
 WORKDIR /opt/app
 
-COPY package.json package-lock.json* /opt/app/
+COPY --from=builder /opt/app/node_modules ./node_modules
+COPY --from=builder /opt/app/dist ./dist
+COPY package.json .
 
-RUN npm ci --production
-
-## Copy of dist directory from builder
-COPY --from=builder /opt/app/dist/ ./dist/
-#uncomment if you are adding custom apis
-# COPY --from=builder /opt/app/src/api-spec ./src/api-spec 
-
-## Expose any application ports
 EXPOSE 3003 3004
 
-CMD [ "npm" , "start" ]
+CMD ["node", "dist/index.js"]
