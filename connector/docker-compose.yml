@@ -5,13 +5,11 @@ networks:
 
 
 services:
-  core-connector-template:
-    image: nazmo-connector:latest
-    build:
-      context: .
+  core-connector:
+    image: dfsp-core-connector:Release
     networks:
       - mojaloop-net
-    env_file: .env.example
+    env_file: .env
     ports:
       - "3003:3003"
       - "3004:3004"
